@@ -60,9 +60,12 @@ func (p Pointer) Tail() Pointer {
 // json-pointer    = *( "/" reference-token )
 // reference-token = *( unescaped / escaped )
 // unescaped       = %x00-2E / %x30-7D / %x7F-10FFFF
-//    ; %x2F ('/') and %x7E ('~') are excluded from 'unescaped'
+//
+//	; %x2F ('/') and %x7E ('~') are excluded from 'unescaped'
+//
 // escaped         = "~" ( "0" / "1" )
-//   ; representing '~' and '/', respectively
+//
+//	; representing '~' and '/', respectively
 func parse(str string) (Pointer, error) {
 	if len(str) == 0 {
 		return Pointer{}, nil
@@ -75,6 +78,15 @@ func parse(str string) (Pointer, error) {
 
 	toks := strings.Split(str, separator)
 	for i, t := range toks {
+		for j := 0; j < len(t); j++ {
+			if t[j] != '~' {
+				continue
+			}
+			if j+1 == len(t) || (t[j+1] != '0' && t[j+1] != '1') {
+				return nil, fmt.Errorf("invalid escape in reference token %q", t)
+			}
+			j++
+		}
 		toks[i] = unescapeToken(t)
 	}
 	return Pointer(toks), nil
